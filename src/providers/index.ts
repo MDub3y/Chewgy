@@ -1,4 +1,6 @@
 import { AnthropicProvider } from './anthropic.js';
+import { GeminiProvider } from './gemini.js';
+import { GroqProvider } from './groq.js';
 import { OllamaProvider } from './ollama.js';
 import { OpenAiProvider } from './openai.js';
 import { LlmProvider, ProviderId, ProviderOptions } from './types.js';
@@ -6,6 +8,8 @@ import { LlmProvider, ProviderId, ProviderOptions } from './types.js';
 export * from './types.js';
 export { AnthropicProvider } from './anthropic.js';
 export { OpenAiProvider } from './openai.js';
+export { GeminiProvider } from './gemini.js';
+export { GroqProvider } from './groq.js';
 export { OllamaProvider } from './ollama.js';
 
 /** Single place that knows how to build a provider. Adding a backend touches only this file. */
@@ -15,6 +19,10 @@ export function createProvider(id: ProviderId, opts: ProviderOptions): LlmProvid
       return new AnthropicProvider(opts);
     case 'openai':
       return new OpenAiProvider(opts);
+    case 'gemini':
+      return new GeminiProvider(opts);
+    case 'groq':
+      return new GroqProvider(opts);
     case 'ollama':
       return new OllamaProvider(opts);
     default: {
@@ -42,6 +50,18 @@ export function providerKeyHint(id: ProviderId): {
       return {
         prompt: 'Paste your OpenAI (or OpenAI-compatible) API key',
         placeholder: 'sk-...',
+        requiresKey: true,
+      };
+    case 'gemini':
+      return {
+        prompt: 'Paste your Gemini API key (free tier available at aistudio.google.com/apikey)',
+        placeholder: 'AIza...',
+        requiresKey: true,
+      };
+    case 'groq':
+      return {
+        prompt: 'Paste your Groq API key (free tier available at console.groq.com/keys)',
+        placeholder: 'gsk_...',
         requiresKey: true,
       };
     case 'ollama':
@@ -88,6 +108,18 @@ export function looksLikeKey(id: ProviderId, key: string): KeyHint | undefined {
     return {
       severity: 'warning',
       message: 'OpenAI keys usually start with "sk-". Fine if you use a gateway.',
+    };
+  }
+  if (id === 'gemini' && !trimmed.startsWith('AIza')) {
+    return {
+      severity: 'warning',
+      message: 'Gemini keys usually start with "AIza". Continuing anyway.',
+    };
+  }
+  if (id === 'groq' && !trimmed.startsWith('gsk_')) {
+    return {
+      severity: 'warning',
+      message: 'Groq keys usually start with "gsk_". Continuing anyway.',
     };
   }
   return undefined;

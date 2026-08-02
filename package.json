@@ -142,11 +142,15 @@
           "enum": [
             "anthropic",
             "openai",
+            "gemini",
+            "groq",
             "ollama"
           ],
           "enumDescriptions": [
             "Anthropic Claude (api.anthropic.com)",
             "OpenAI or any OpenAI-compatible endpoint",
+            "Google Gemini — free tier available at aistudio.google.com/apikey",
+            "Groq — fast inference, free tier available at console.groq.com/keys",
             "Local Ollama server (no API key required)"
           ],
           "default": "anthropic",
@@ -155,7 +159,7 @@
         "chewgy.model": {
           "type": "string",
           "default": "",
-          "description": "Model id. Leave empty to use the provider default (claude-sonnet-4-5 / gpt-4o-mini / llama3.1)."
+          "description": "Model id. Leave empty to use the provider default (claude-sonnet-4-5 / gpt-4o-mini / gemini-2.0-flash / llama-3.3-70b-versatile / llama3.1)."
         },
         "chewgy.baseUrl": {
           "type": "string",
@@ -181,6 +185,18 @@
           "type": "boolean",
           "default": true,
           "description": "Automatically review a file when you save it."
+        },
+        "chewgy.reviewOnType": {
+          "type": "boolean",
+          "default": false,
+          "description": "Review continuously while you type, a beat after you pause (debounced). Uses far more API calls than reviewOnSave — off by default."
+        },
+        "chewgy.reviewDebounceMs": {
+          "type": "number",
+          "default": 1500,
+          "minimum": 300,
+          "maximum": 10000,
+          "description": "How long to wait after you stop typing before Chewgy reviews live. Only used when reviewOnType is on."
         },
         "chewgy.silentMode": {
           "type": "boolean",

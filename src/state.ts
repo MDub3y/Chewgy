@@ -105,10 +105,12 @@ export class ChewgyState implements vscode.Disposable {
     this.mood = result.mood;
     this.bubble = result.verdict;
     this.findingCount = shownCount;
+    // `result.findings` is sorted worst-first, so index 0 is the one thing worth fixing first.
+    const worst = result.findings[0];
     this.detail =
       shownCount === 0
         ? `${fileName} — nothing worth mentioning.`
-        : `${fileName} — ${shownCount} complaint${shownCount === 1 ? '' : 's'}.`;
+        : `${fileName} — ${shownCount} complaint${shownCount === 1 ? '' : 's'}. Start here: L${worst.line} — ${worst.issue}`;
     this.emit();
   }
 

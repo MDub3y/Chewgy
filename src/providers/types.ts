@@ -6,7 +6,7 @@
  * backend swappable (Anthropic <-> OpenAI <-> Ollama) without touching UI code.
  */
 
-export type ProviderId = 'anthropic' | 'openai' | 'ollama';
+export type ProviderId = 'anthropic' | 'openai' | 'gemini' | 'groq' | 'ollama';
 
 export interface CompletionRequest {
   system: string;

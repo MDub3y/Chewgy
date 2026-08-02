@@ -1,5 +1,12 @@
 import { Finding, MOODS, Mood, ReviewResult, SEVERITIES, Severity } from './types.js';
 
+/** Most important first: a real bug outranks a style nit even if the model listed it later. */
+const SEVERITY_RANK: Record<Severity, number> = {
+  warning: 0,
+  refactor: 1,
+  style: 2,
+};
+
 export class ParseError extends Error {
   constructor(
     message: string,
@@ -122,6 +129,7 @@ export function parseReview(raw: string, opts: ParseOptions): ReviewResult {
   const findings = rawFindings
     .map((f) => normalizeFinding(f, opts.totalLines))
     .filter((f): f is Finding => f !== undefined)
+    .sort((a, b) => SEVERITY_RANK[a.severity] - SEVERITY_RANK[b.severity])
     .slice(0, opts.maxFindings);
 
   return {

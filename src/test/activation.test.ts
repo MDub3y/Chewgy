@@ -257,6 +257,7 @@ describe('chewgy.setApiKey', () => {
     const context = fakeContext();
     activate(context as never);
 
+    recorder.nextQuickPick = { label: 'Anthropic Claude', id: 'anthropic' };
     recorder.nextInputBox = 'sk-ant-api03-valid-key';
     await recorder.commands.get('chewgy.setApiKey')!();
 
@@ -276,6 +277,7 @@ describe('chewgy.setApiKey', () => {
     const context = fakeContext();
     activate(context as never);
 
+    recorder.nextQuickPick = { label: 'Anthropic Claude', id: 'anthropic' };
     recorder.nextInputBox = 'sk-ant-api03-bogus-key';
     await recorder.commands.get('chewgy.setApiKey')!();
 

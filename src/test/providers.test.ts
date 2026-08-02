@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   AnthropicProvider,
+  GeminiProvider,
+  GroqProvider,
   OllamaProvider,
   OpenAiProvider,
   createProvider,
@@ -32,12 +34,16 @@ describe('createProvider', () => {
   it('builds each backend with sensible defaults', () => {
     expect(createProvider('anthropic', {}).defaultModel).toBe('claude-sonnet-4-5');
     expect(createProvider('openai', {}).defaultModel).toBe('gpt-4o-mini');
+    expect(createProvider('gemini', {}).defaultModel).toBe('gemini-2.0-flash');
+    expect(createProvider('groq', {}).defaultModel).toBe('llama-3.3-70b-versatile');
     expect(createProvider('ollama', {}).defaultModel).toBe('llama3.1');
   });
 
   it('only requires a key where a key exists', () => {
     expect(createProvider('anthropic', {}).requiresApiKey).toBe(true);
     expect(createProvider('openai', {}).requiresApiKey).toBe(true);
+    expect(createProvider('gemini', {}).requiresApiKey).toBe(true);
+    expect(createProvider('groq', {}).requiresApiKey).toBe(true);
     expect(createProvider('ollama', {}).requiresApiKey).toBe(false);
   });
 });
@@ -99,11 +105,15 @@ describe('looksLikeKey', () => {
   it('only warns about an unexpected prefix', () => {
     expect(looksLikeKey('anthropic', 'weird-but-long-enough-key')?.severity).toBe('warning');
     expect(looksLikeKey('openai', 'gsk_abcdefghijklmnop')?.severity).toBe('warning');
+    expect(looksLikeKey('gemini', 'not-an-aiza-key-1234')?.severity).toBe('warning');
+    expect(looksLikeKey('groq', 'not-a-groq-key-1234')?.severity).toBe('warning');
   });
 
   it('accepts well-formed keys', () => {
     expect(looksLikeKey('anthropic', 'sk-ant-api03-abcdefghijkl')).toBeUndefined();
     expect(looksLikeKey('openai', 'sk-proj-abcdefghijkl')).toBeUndefined();
+    expect(looksLikeKey('gemini', 'AIzaSyAbcdefghijkl')).toBeUndefined();
+    expect(looksLikeKey('groq', 'gsk_abcdefghijkl')).toBeUndefined();
   });
 });
 
@@ -111,6 +121,8 @@ describe('providerKeyHint', () => {
   it('tells the user Ollama needs nothing', () => {
     expect(providerKeyHint('ollama').requiresKey).toBe(false);
     expect(providerKeyHint('anthropic').requiresKey).toBe(true);
+    expect(providerKeyHint('gemini').requiresKey).toBe(true);
+    expect(providerKeyHint('groq').requiresKey).toBe(true);
   });
 });
 
@@ -239,6 +251,68 @@ describe('OpenAiProvider', () => {
   it('handles a null content field', async () => {
     stubFetch(() => json({ choices: [{ message: { content: null } }] }));
     const out = await new OpenAiProvider({ apiKey: 'k' }).complete({
+      system: '',
+      user: '',
+      maxTokens: 1,
+      temperature: 0,
+    });
+    expect(out).toBe('');
+  });
+});
+
+describe('GroqProvider', () => {
+  it('calls the chat completions endpoint at groq.com', async () => {
+    const spy = stubFetch(() => json({ choices: [{ message: { content: 'howdy' } }] }));
+    const out = await new GroqProvider({ apiKey: 'gsk_test' }).complete({
+      system: 'sys',
+      user: 'usr',
+      maxTokens: 50,
+      temperature: 0.2,
+    });
+
+    expect(out).toBe('howdy');
+    const [url, init] = spy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://api.groq.com/openai/v1/chat/completions');
+    expect((init.headers as Record<string, string>).authorization).toBe('Bearer gsk_test');
+  });
+
+  it('handles a null content field', async () => {
+    stubFetch(() => json({ choices: [{ message: { content: null } }] }));
+    const out = await new GroqProvider({ apiKey: 'k' }).complete({
+      system: '',
+      user: '',
+      maxTokens: 1,
+      temperature: 0,
+    });
+    expect(out).toBe('');
+  });
+});
+
+describe('GeminiProvider', () => {
+  it('calls generateContent with the key as a query param', async () => {
+    const spy = stubFetch(() =>
+      json({ candidates: [{ content: { parts: [{ text: 'howdy' }] } }] }),
+    );
+    const out = await new GeminiProvider({ apiKey: 'AIzaTest' }).complete({
+      system: 'sys',
+      user: 'usr',
+      maxTokens: 50,
+      temperature: 0.2,
+    });
+
+    expect(out).toBe('howdy');
+    const [url, init] = spy.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaTest',
+    );
+    const body = JSON.parse(init.body as string);
+    expect(body.systemInstruction).toEqual({ parts: [{ text: 'sys' }] });
+    expect(body.contents[0]).toEqual({ role: 'user', parts: [{ text: 'usr' }] });
+  });
+
+  it('handles an empty candidates array', async () => {
+    stubFetch(() => json({ candidates: [] }));
+    const out = await new GeminiProvider({ apiKey: 'k' }).complete({
       system: '',
       user: '',
       maxTokens: 1,

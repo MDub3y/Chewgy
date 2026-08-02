@@ -8,6 +8,8 @@ export interface ChewgyConfig {
   baseUrl: string;
   attitude: Attitude;
   reviewOnSave: boolean;
+  reviewOnType: boolean;
+  reviewDebounceMs: number;
   silentMode: boolean;
   maxFindings: number;
   maxChars: number;
@@ -17,7 +19,7 @@ export interface ChewgyConfig {
   requestTimeoutMs: number;
 }
 
-const PROVIDERS: readonly ProviderId[] = ['anthropic', 'openai', 'ollama'];
+const PROVIDERS: readonly ProviderId[] = ['anthropic', 'openai', 'gemini', 'groq', 'ollama'];
 const ATTITUDES: readonly Attitude[] = ['mild', 'standard', 'ruthless'];
 
 /** Reads settings fresh on every call so changes apply without a reload. */
@@ -29,6 +31,8 @@ export function readConfig(scope?: vscode.Uri): ChewgyConfig {
     baseUrl: (c.get<string>('baseUrl') ?? '').trim(),
     attitude: oneOf(c.get<string>('attitude'), ATTITUDES, 'standard'),
     reviewOnSave: c.get<boolean>('reviewOnSave') ?? true,
+    reviewOnType: c.get<boolean>('reviewOnType') ?? false,
+    reviewDebounceMs: clampNumber(c.get<number>('reviewDebounceMs'), 300, 10_000, 1500),
     silentMode: c.get<boolean>('silentMode') ?? false,
     maxFindings: clampNumber(c.get<number>('maxFindings'), 1, 30, 8),
     maxChars: clampNumber(c.get<number>('maxChars'), 500, 500_000, 24_000),

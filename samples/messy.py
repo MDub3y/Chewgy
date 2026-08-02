@@ -72,3 +72,7 @@ if __name__ == "__main__":
     print(GreeterFactory().create("fr"))
     print(add(1, 2))
     print(count_words("a b a"))
+
+fn intentionally_horrible {
+    print("intentionally horrible")
+}

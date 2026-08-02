@@ -249,6 +249,7 @@ export const recorder = {
   errorMessages: [] as string[],
   statusBarText: '',
   savedDocuments: [] as Array<(doc: unknown) => unknown>,
+  changedDocuments: [] as Array<(event: unknown) => unknown>,
   settings: new Map<string, unknown>(),
   updatedSettings: [] as Array<{ key: string; value: unknown }>,
   /** Scripted user input for showInputBox / showQuickPick. */
@@ -264,6 +265,7 @@ export const recorder = {
     this.errorMessages = [];
     this.statusBarText = '';
     this.savedDocuments = [];
+    this.changedDocuments = [];
     this.settings.clear();
     this.updatedSettings = [];
     this.nextInputBox = undefined;
@@ -333,6 +335,10 @@ export const workspace = {
   }),
   onDidSaveTextDocument: (handler: (doc: unknown) => unknown) => {
     recorder.savedDocuments.push(handler);
+    return noopDisposable;
+  },
+  onDidChangeTextDocument: (handler: (event: unknown) => unknown) => {
+    recorder.changedDocuments.push(handler);
     return noopDisposable;
   },
   onDidCloseTextDocument: () => noopDisposable,

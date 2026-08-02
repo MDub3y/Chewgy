@@ -18,6 +18,8 @@ function config(over: Partial<ChewgyConfig> = {}): ChewgyConfig {
     baseUrl: '',
     attitude: 'standard',
     reviewOnSave: true,
+    reviewOnType: false,
+    reviewDebounceMs: 1500,
     silentMode: false,
     maxFindings: 8,
     maxChars: 24_000,

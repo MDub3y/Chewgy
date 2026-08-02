@@ -29,6 +29,16 @@ export function activate(context: vscode.ExtensionContext): void {
 
   /** Guards against overlapping reviews of the same document (save storms). */
   const inFlight = new Map<string, vscode.CancellationTokenSource>();
+  /** Pending "review while typing" timers, keyed by document uri, so a keystroke resets the clock. */
+  const typingTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+  function cancelTypingTimer(key: string): void {
+    const timer = typingTimers.get(key);
+    if (timer) {
+      clearTimeout(timer);
+      typingTimers.delete(key);
+    }
+  }
 
   context.subscriptions.push(
     output,
@@ -227,7 +237,34 @@ export function activate(context: vscode.ExtensionContext): void {
     context.subscriptions.push(vscode.commands.registerCommand(id, handler));
 
   register('chewgy.setApiKey', async () => {
-    const config = readConfig();
+    const startingConfig = readConfig();
+
+    const PROVIDER_LABELS: Record<ChewgyConfig['provider'], string> = {
+      anthropic: 'Anthropic Claude',
+      openai: 'OpenAI',
+      gemini: 'Gemini (free tier at aistudio.google.com/apikey)',
+      groq: 'Groq (free tier at console.groq.com/keys)',
+      ollama: 'Ollama (local, no key needed)',
+    };
+
+    const providerPick = await vscode.window.showQuickPick(
+      (Object.keys(PROVIDER_LABELS) as Array<ChewgyConfig['provider']>).map((id) => ({
+        label: PROVIDER_LABELS[id],
+        description: id === startingConfig.provider ? 'current' : undefined,
+        id,
+      })),
+      { title: 'Chewgy — which LLM backend is this key for?', ignoreFocusOut: true },
+    );
+
+    if (!providerPick) {
+      return;
+    }
+
+    if (providerPick.id !== startingConfig.provider) {
+      await updateSetting('provider', providerPick.id);
+    }
+
+    const config = { ...startingConfig, provider: providerPick.id };
     const hint = providerKeyHint(config.provider);
 
     if (!hint.requiresKey) {
@@ -379,6 +416,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
   context.subscriptions.push(
     vscode.workspace.onDidSaveTextDocument(async (document) => {
+      cancelTypingTimer(document.uri.toString());
       const config = readConfig(document.uri);
       if (!config.reviewOnSave || state.isAsleep) {
         return;
@@ -386,10 +424,30 @@ export function activate(context: vscode.ExtensionContext): void {
       await runReview(document, { manual: false });
     }),
 
+    vscode.workspace.onDidChangeTextDocument((event) => {
+      const document = event.document;
+      if (event.contentChanges.length === 0) {
+        return;
+      }
+      const config = readConfig(document.uri);
+      const key = document.uri.toString();
+      cancelTypingTimer(key);
+      if (!config.reviewOnType || state.isAsleep) {
+        return;
+      }
+      const timer = setTimeout(() => {
+        typingTimers.delete(key);
+        void runReview(document, { manual: false });
+      }, config.reviewDebounceMs);
+      typingTimers.set(key, timer);
+    }),
+
     vscode.workspace.onDidCloseTextDocument((document) => {
+      const key = document.uri.toString();
+      cancelTypingTimer(key);
       diagnostics.delete(document.uri);
       codeActions.clear(document.uri);
-      inFlight.get(document.uri.toString())?.cancel();
+      inFlight.get(key)?.cancel();
     }),
 
     vscode.workspace.onDidChangeConfiguration(async (e) => {
