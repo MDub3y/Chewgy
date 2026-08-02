@@ -1,0 +1,272 @@
+:root {
+  --chewgy-gap: 14px;
+  --chewgy-radius: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: var(--chewgy-gap);
+  font-family: var(--vscode-font-family);
+  font-size: var(--vscode-font-size);
+  color: var(--vscode-foreground);
+  background: transparent;
+}
+
+.stage {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--chewgy-gap);
+}
+
+/* ---------- cat ---------- */
+
+.cat-wrap {
+  flex: 0 0 auto;
+  width: 104px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  user-select: none;
+  cursor: pointer;
+}
+
+.cat {
+  width: 96px;
+  height: 84px;
+  animation: breathe 4.5s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+
+body[data-status='thinking'] .cat {
+  animation: jiggle 0.9s ease-in-out infinite;
+}
+
+body[data-status='sleeping'] .cat {
+  animation: breathe 6.5s ease-in-out infinite;
+  opacity: 0.75;
+}
+
+body[data-mood='horrified'] .cat {
+  animation: shake 0.5s ease-in-out 3;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scaleY(1) scaleX(1); }
+  50% { transform: scaleY(1.035) scaleX(0.985); }
+}
+
+@keyframes jiggle {
+  0%, 100% { transform: rotate(-2.5deg); }
+  50% { transform: rotate(2.5deg); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
+.cat-name {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+/* Mood-driven face bits. */
+.eye-open { display: inline; }
+.eye-closed { display: none; }
+
+body[data-status='sleeping'] .eye-open,
+body[data-mood='smug'] .eye-open {
+  display: none;
+}
+body[data-status='sleeping'] .eye-closed,
+body[data-mood='smug'] .eye-closed {
+  display: inline;
+}
+
+body[data-mood='horrified'] .pupil { r: 6.5; }
+body[data-mood='impressed'] .pupil { r: 5.2; }
+
+.zzz {
+  opacity: 0;
+}
+body[data-status='sleeping'] .zzz {
+  opacity: 1;
+  animation: float-up 3s ease-in-out infinite;
+}
+
+@keyframes float-up {
+  0% { opacity: 0; transform: translate(0, 4px); }
+  35% { opacity: 0.9; }
+  100% { opacity: 0; transform: translate(6px, -14px); }
+}
+
+/* ---------- bubble ---------- */
+
+.right {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bubble {
+  position: relative;
+  background: var(--vscode-editorWidget-background, var(--vscode-editor-background));
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+  border-radius: var(--chewgy-radius);
+  padding: 12px 14px;
+  min-height: 44px;
+  line-height: 1.45;
+}
+
+.bubble::before,
+.bubble::after {
+  content: '';
+  position: absolute;
+  left: -9px;
+  top: 18px;
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right: 9px solid var(--vscode-editorWidget-border, var(--vscode-panel-border));
+}
+
+.bubble::after {
+  left: -8px;
+  border-right-color: var(--vscode-editorWidget-background, var(--vscode-editor-background));
+}
+
+.bubble-text {
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.bubble-detail {
+  margin-top: 6px;
+  font-size: 0.92em;
+  opacity: 0.7;
+  word-break: break-word;
+}
+
+.bubble.pop {
+  animation: pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes pop {
+  0% { transform: scale(0.96); opacity: 0.5; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ---------- chips & buttons ---------- */
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.chip {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--vscode-panel-border);
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
+.chip.warn {
+  border-color: var(--vscode-inputValidation-warningBorder, var(--vscode-panel-border));
+  color: var(--vscode-inputValidation-warningForeground, var(--vscode-foreground));
+}
+
+button {
+  font-family: inherit;
+  font-size: 12px;
+  padding: 4px 11px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  background: var(--vscode-button-secondaryBackground, var(--vscode-button-background));
+  color: var(--vscode-button-secondaryForeground, var(--vscode-button-foreground));
+}
+
+button.primary {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+button:hover {
+  background: var(--vscode-button-secondaryHoverBackground, var(--vscode-button-hoverBackground));
+}
+
+button.primary:hover {
+  background: var(--vscode-button-hoverBackground);
+}
+
+/* ---------- findings ---------- */
+
+.findings {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.finding {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 5px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+}
+
+.finding:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+
+.finding[data-severity='warning'] { border-left-color: var(--vscode-editorWarning-foreground); }
+.finding[data-severity='refactor'] { border-left-color: var(--vscode-editorInfo-foreground); }
+.finding[data-severity='style'] { border-left-color: var(--vscode-descriptionForeground); }
+
+.finding .line {
+  flex: 0 0 auto;
+  font-family: var(--vscode-editor-font-family);
+  font-size: 11px;
+  opacity: 0.6;
+  min-width: 3.5em;
+  text-align: right;
+}
+
+.finding .text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty {
+  opacity: 0.5;
+  font-size: 0.92em;
+  padding: 2px 4px;
+}
+
+@media (max-width: 460px) {
+  .stage { flex-direction: column; align-items: center; }
+  .bubble::before, .bubble::after { display: none; }
+  .right { width: 100%; }
+}

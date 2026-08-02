@@ -1,0 +1,264 @@
+{
+  "name": "chewgy-code-reviewer",
+  "displayName": "Chewgy — AI Code Reviewer",
+  "description": "A sassy, unimpressed mochi-cat who judges your code so you don't have to.",
+  "version": "0.1.0",
+  "publisher": "mdub3y",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MDub3y/Chewgy.git"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Linters",
+    "Programming Languages",
+    "Machine Learning"
+  ],
+  "keywords": [
+    "ai",
+    "code review",
+    "linter",
+    "llm",
+    "cat"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "chewgy.setApiKey",
+        "title": "Chewgy: Set API Key",
+        "category": "Chewgy"
+      },
+      {
+        "command": "chewgy.clearApiKey",
+        "title": "Chewgy: Clear Stored API Key",
+        "category": "Chewgy"
+      },
+      {
+        "command": "chewgy.reviewFile",
+        "title": "Chewgy: Review Current File",
+        "category": "Chewgy"
+      },
+      {
+        "command": "chewgy.reviewSelection",
+        "title": "Chewgy: Review Selection",
+        "category": "Chewgy"
+      },
+      {
+        "command": "chewgy.toggle",
+        "title": "Chewgy: Toggle Sleep / Wake",
+        "category": "Chewgy"
+      },
+      {
+        "command": "chewgy.sleep",
+        "title": "Chewgy: Go to Sleep",
+        "category": "Chewgy"
+      },
+      {
+        "command": "chewgy.wake",
+        "title": "Chewgy: Wake Up",
+        "category": "Chewgy"
+      },
+      {
+        "command": "chewgy.setAttitude",
+        "title": "Chewgy: Set Attitude",
+        "category": "Chewgy"
+      },
+      {
+        "command": "chewgy.clearDiagnostics",
+        "title": "Chewgy: Clear All Complaints",
+        "category": "Chewgy"
+      },
+      {
+        "command": "chewgy.showPanel",
+        "title": "Chewgy: Show the Cat",
+        "category": "Chewgy"
+      },
+      {
+        "command": "chewgy.applyFix",
+        "title": "Chewgy: Apply Suggested Fix",
+        "category": "Chewgy"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "chewgy.reviewFile",
+        "key": "ctrl+alt+c",
+        "mac": "cmd+alt+c",
+        "when": "editorTextFocus"
+      },
+      {
+        "command": "chewgy.toggle",
+        "key": "ctrl+alt+shift+c",
+        "mac": "cmd+alt+shift+c"
+      }
+    ],
+    "viewsContainers": {
+      "panel": [
+        {
+          "id": "chewgy-panel",
+          "title": "Chewgy",
+          "icon": "$(smiley)"
+        }
+      ]
+    },
+    "views": {
+      "chewgy-panel": [
+        {
+          "type": "webview",
+          "id": "chewgy.catView",
+          "name": "Chewgy",
+          "icon": "$(smiley)",
+          "contextualTitle": "Chewgy"
+        }
+      ]
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "command": "chewgy.reviewSelection",
+          "when": "editorHasSelection",
+          "group": "1_modification@99"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "chewgy.applyFix",
+          "when": "false"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Chewgy",
+      "properties": {
+        "chewgy.provider": {
+          "type": "string",
+          "enum": [
+            "anthropic",
+            "openai",
+            "ollama"
+          ],
+          "enumDescriptions": [
+            "Anthropic Claude (api.anthropic.com)",
+            "OpenAI or any OpenAI-compatible endpoint",
+            "Local Ollama server (no API key required)"
+          ],
+          "default": "anthropic",
+          "description": "Which LLM backend Chewgy uses. The persona is identical across providers."
+        },
+        "chewgy.model": {
+          "type": "string",
+          "default": "",
+          "description": "Model id. Leave empty to use the provider default (claude-sonnet-4-5 / gpt-4o-mini / llama3.1)."
+        },
+        "chewgy.baseUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Override the provider endpoint. Useful for OpenAI-compatible gateways, Azure, or a remote Ollama host."
+        },
+        "chewgy.attitude": {
+          "type": "string",
+          "enum": [
+            "mild",
+            "standard",
+            "ruthless"
+          ],
+          "enumDescriptions": [
+            "Mild — passive-aggressive but polite advice.",
+            "Standard — the sassy mochi cat you signed up for.",
+            "Ruthless — unfiltered roast. You asked for this."
+          ],
+          "default": "standard",
+          "description": "How hard Chewgy is allowed to go."
+        },
+        "chewgy.reviewOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically review a file when you save it."
+        },
+        "chewgy.silentMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Keep reviewing in the background, but suppress speech bubbles and pop-ups. Diagnostics still appear."
+        },
+        "chewgy.maxFindings": {
+          "type": "number",
+          "default": 8,
+          "minimum": 1,
+          "maximum": 30,
+          "description": "Maximum number of complaints Chewgy may raise per review."
+        },
+        "chewgy.maxChars": {
+          "type": "number",
+          "default": 24000,
+          "minimum": 500,
+          "description": "Files larger than this (in characters) are skipped to protect your token budget."
+        },
+        "chewgy.temperature": {
+          "type": "number",
+          "default": 0.6,
+          "minimum": 0,
+          "maximum": 2,
+          "description": "Sampling temperature. Higher means sassier and less predictable."
+        },
+        "chewgy.excludeGlobs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "**/node_modules/**",
+            "**/target/**",
+            "**/dist/**",
+            "**/build/**",
+            "**/out/**",
+            "**/.git/**",
+            "**/vendor/**",
+            "**/*.min.js",
+            "**/*.lock",
+            "**/Cargo.lock",
+            "**/package-lock.json"
+          ],
+          "description": "Glob patterns Chewgy refuses to look at."
+        },
+        "chewgy.languages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Restrict reviews to these VS Code language ids (e.g. rust, python, typescript). Empty means every language."
+        },
+        "chewgy.requestTimeoutMs": {
+          "type": "number",
+          "default": 60000,
+          "minimum": 5000,
+          "description": "How long Chewgy waits for the model before giving up and taking a nap."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run build",
+    "build": "node esbuild.js --production",
+    "watch": "node esbuild.js --watch",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "verify": "npm run check && npm run test && npm run build",
+    "package": "npx --yes @vscode/vsce package --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.85.0",
+    "esbuild": "^0.23.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}
