@@ -104,6 +104,20 @@ describe('parseReview', () => {
     expect(result.findings).toHaveLength(3);
   });
 
+  it('sorts findings worst-severity-first, most important surviving the maxFindings cut', () => {
+    const raw = JSON.stringify({
+      findings: [
+        { line: 1, severity: 'style', catComment: 'nit' },
+        { line: 2, severity: 'warning', catComment: 'real bug' },
+        { line: 3, severity: 'refactor', catComment: 'over-engineered' },
+        { line: 4, severity: 'warning', catComment: 'another real bug' },
+      ],
+    });
+    const result = parseReview(raw, { totalLines: 100, maxFindings: 3 });
+    expect(result.findings.map((f) => f.severity)).toEqual(['warning', 'warning', 'refactor']);
+    expect(result.findings[0].catComment).toBe('real bug');
+  });
+
   it('maps severity synonyms and defaults to style', () => {
     const raw = JSON.stringify({
       findings: [

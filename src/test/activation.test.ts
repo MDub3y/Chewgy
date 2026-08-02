@@ -251,6 +251,64 @@ describe('review on save', () => {
   });
 });
 
+describe('review on type', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('reviews after the debounce delay when enabled', async () => {
+    const spy = stubModel(MODEL_REPLY);
+    recorder.settings.set('reviewOnType', true);
+    recorder.settings.set('reviewDebounceMs', 1500);
+    activate(fakeContext('sk-ant-stored') as never);
+
+    const document = makeDocument({ text: RUST });
+    for (const handler of recorder.changedDocuments) {
+      await handler({ document, contentChanges: [{ text: 'x' }] });
+    }
+
+    expect(spy).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('resets the timer on every keystroke instead of stacking reviews', async () => {
+    const spy = stubModel(MODEL_REPLY);
+    recorder.settings.set('reviewOnType', true);
+    recorder.settings.set('reviewDebounceMs', 1000);
+    activate(fakeContext('sk-ant-stored') as never);
+
+    const document = makeDocument({ text: RUST });
+    for (let i = 0; i < 5; i++) {
+      for (const handler of recorder.changedDocuments) {
+        await handler({ document, contentChanges: [{ text: 'x' }] });
+      }
+      await vi.advanceTimersByTimeAsync(400);
+    }
+    expect(spy).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  it('stays quiet when reviewOnType is off', async () => {
+    const spy = stubModel(MODEL_REPLY);
+    recorder.settings.set('reviewOnType', false);
+    activate(fakeContext('sk-ant-stored') as never);
+
+    const document = makeDocument({ text: RUST });
+    for (const handler of recorder.changedDocuments) {
+      await handler({ document, contentChanges: [{ text: 'x' }] });
+    }
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(spy).not.toHaveBeenCalled();
+  });
+});
+
 describe('chewgy.setApiKey', () => {
   it('stores the key only after the provider verifies it', async () => {
     const spy = stubModel('k');

@@ -31,6 +31,8 @@ export function activate(context: vscode.ExtensionContext): void {
   const inFlight = new Map<string, vscode.CancellationTokenSource>();
   /** Pending "review while typing" timers, keyed by document uri, so a keystroke resets the clock. */
   const typingTimers = new Map<string, ReturnType<typeof setTimeout>>();
+  /** Last-known findings per document, so switching tabs shows that file's own complaints. */
+  const findingsByUri = new Map<string, DiagnosticSpec[]>();
 
   function cancelTypingTimer(key: string): void {
     const timer = typingTimers.get(key);
@@ -128,7 +130,14 @@ export function activate(context: vscode.ExtensionContext): void {
 
     diagnostics.set(uri, items);
     codeActions.setFixes(uri, specs);
-    catView.setFindings(uri, specs);
+    findingsByUri.set(uri.toString(), specs);
+    if (isActiveDocument(uri)) {
+      catView.setFindings(uri, specs);
+    }
+  }
+
+  function isActiveDocument(uri: vscode.Uri): boolean {
+    return vscode.window.activeTextEditor?.document.uri.toString() === uri.toString();
   }
 
   async function runReview(
@@ -184,7 +193,10 @@ export function activate(context: vscode.ExtensionContext): void {
           output.appendLine(`[skip] ${name}: ${outcome.detail}`);
           diagnostics.delete(document.uri);
           codeActions.clear(document.uri);
-          catView.setFindings(undefined, []);
+          findingsByUri.delete(document.uri.toString());
+          if (isActiveDocument(document.uri)) {
+            catView.setFindings(undefined, []);
+          }
           const line = outcome.detail.includes('characters') ? quips.tooBig() : quips.skipped();
           state.setIdle(line, outcome.detail);
           if (opts.manual && !config.silentMode) {
@@ -400,6 +412,7 @@ export function activate(context: vscode.ExtensionContext): void {
   register('chewgy.clearDiagnostics', async () => {
     diagnostics.clear();
     codeActions.clear();
+    findingsByUri.clear();
     catView.setFindings(undefined, []);
     await refresh('Cleared. The complaints still happened, though.');
   });
@@ -447,7 +460,15 @@ export function activate(context: vscode.ExtensionContext): void {
       cancelTypingTimer(key);
       diagnostics.delete(document.uri);
       codeActions.clear(document.uri);
+      findingsByUri.delete(key);
       inFlight.get(key)?.cancel();
+    }),
+
+    vscode.window.onDidChangeActiveTextEditor((editor) => {
+      if (!editor || editor.document.uri.scheme !== 'file') {
+        return;
+      }
+      catView.setFindings(editor.document.uri, findingsByUri.get(editor.document.uri.toString()) ?? []);
     }),
 
     vscode.workspace.onDidChangeConfiguration(async (e) => {

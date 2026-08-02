@@ -323,6 +323,7 @@ export const window = {
   withProgress: async <T>(_o: unknown, task: () => Promise<T>) => task(),
   registerWebviewViewProvider: () => noopDisposable,
   activeTextEditor: undefined as unknown,
+  onDidChangeActiveTextEditor: () => noopDisposable,
 };
 
 export const workspace = {
